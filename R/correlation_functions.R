@@ -15,8 +15,9 @@
 #' @description Visualization of series with its lags, 
 #' can be used to identify a correlation between the series and it lags
 #' @examples
-#' # Seasonal box plot
-#' ts_lags(AirPassengers) 
+#' data(USgas)
+#' 
+#' ts_lags(USgas) 
 
 ts_lags <- function(ts.obj, lag.max = 12, Xtitle = FALSE, Ytitle = TRUE, margin = 0.02, 
                     Xshare = TRUE, Yshare = TRUE, n_row = 3){
@@ -121,11 +122,11 @@ for(g in 1:lag.max){
                             mode = "markers",
                             name = paste("Lag", g, sep = " ")) %>%
     plotly::layout(xaxis = list(title = paste("Lag", g, sep = " "),
-                        range = c( min(na.omit(as.numeric(lag))),  
-                                   max(na.omit(as.numeric(lag))))),
+                        range = c( base::min(stats::na.omit(as.numeric(lag))),  
+                                   base::max(stats::na.omit(as.numeric(lag))))),
            yaxis = list(title = paste("Series", sep = ""),
-                        range = c( min(na.omit(as.numeric(df$value))),  
-                                   max(na.omit(as.numeric(df$value))))),
+                        range = c( base::min(stats::na.omit(as.numeric(df$value))),  
+                                   base::max(stats::na.omit(as.numeric(df$value))))),
            title = paste("Series vs Lags", sep = " "),
            annotations = list(text = paste("Lag", g, sep = " "), 
                               xref = "paper", yref = "paper", yanchor = "bottom", 
@@ -146,15 +147,21 @@ return(p)
 }
 
 #'  A Visualization Function of the ACF Estimation
-#' @export
+#' @export acf_ly ts_acf
+#' @aliases acf_ly
 #' @param ts.obj a univariate or multivariate time series object of class "ts", "mts", "zoo" or "xts"
-#' @param lag.max maximum lag at which to calculate the acf. Default is 10*log10(N/m) where N is the number of observations and m the number of series. Will be automatically limited to one less than the number of observations in the series.
+#' @param lag.max maximum lag at which to calculate the acf. Default is 10*log10(N/m) 
+#' where N is the number of observations and m the number of series. 
+#' Will be automatically limited to one less than the number of observations in the series.
+#' @param color The color of the plot, support both name and expression
 #' @param ci the significant level of the estimation - a numeric value between 0 and 1, default is set for 0.95 
 #' @examples
-#' acf_ly(AirPassengers, lag.max = 60)
+#' data(USgas)
+#' 
+#' ts_acf(USgas, lag.max = 60)
 
 
-acf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
+ts_acf <- function(ts.obj, lag.max = NULL, ci = 0.95, color = NULL) {
   `%>%` <- magrittr::`%>%`
   # Error handling
   if (is.null(ts.obj)) {
@@ -167,6 +174,14 @@ acf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
   if (ci > 1 | ci < 0) {
     warning("The 'ci' value is out of bound (0-1), the default option of 0.95 will be used")
     ci <- 0.95
+  }
+  if(!is.null(color)){
+    if(!is.character(color)){
+      warning("The value of the 'color' parameter is not valid")
+      color = "#00526d"
+    }
+  } else{
+    color = "#00526d"
   }
   
   x <- df <- obj.name <- NULL
@@ -218,8 +233,8 @@ acf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
                                                                    dash = "dash", color = "green")) %>% 
             plotly::layout(xaxis = list(title = "Lag", 
                                         showgrid = FALSE), yaxis = list(title = "ACF", 
-                                                                        showgrid = FALSE, range = c(min(x[[1]]), 
-                                                                                                    max(x[[1]]))), annotations = list(text = c, 
+                                                                        showgrid = FALSE, range = c(base::min(x[[1]]), 
+                                                                                                    base::max(x[[1]]))), annotations = list(text = c, 
                                                                                                                                       xref = "paper", yref = "paper", yanchor = "bottom", 
                                                                                                                                       xanchor = "center", align = "center", 
                                                                                                                                       x = 0.5, y = 0.9, showarrow = FALSE))
@@ -238,8 +253,8 @@ acf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
                                                                    dash = "dash", color = "green")) %>% 
             plotly::layout(xaxis = list(title = "Lag", 
                                         showgrid = FALSE), yaxis = list(title = "ACF", 
-                                                                        showgrid = FALSE, range = c(min(x[[1]]), 
-                                                                                                    max(x[[1]]))), annotations = list(text = paste(r, 
+                                                                        showgrid = FALSE, range = c(base::min(x[[1]]), 
+                                                                                                    base::max(x[[1]]))), annotations = list(text = paste(r, 
                                                                                                                                                    c, sep = " & "), xref = "paper", yref = "paper", 
                                                                                                                                       yanchor = "bottom", xanchor = "center", 
                                                                                                                                       align = "center", x = 0.5, y = 0.9, 
@@ -253,7 +268,10 @@ acf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
       plotly::layout(title = "ACF Plot", margin = 0.06)
   } else if (ncol(df) == 5) {
     p <- plotly::plot_ly(data = df) %>% plotly::add_bars(x = ~lag, 
-                                                         y = ~acf, width = ~width, name = "ACF") %>% 
+                                                         y = ~acf, 
+                                                         width = ~width, 
+                                                         marker = list(color = color),
+                                                         name = "ACF") %>% 
       plotly::add_trace(x = ~lag, y = ~ci_u, type = "scatter", 
                         mode = "lines", name = "CI Upper Bound", 
                         line = list(width = 1, dash = "dash", color = "green")) %>% 
@@ -270,31 +288,49 @@ acf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
   }
 
 
+acf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95, color = NULL) {
+ # .Deprecated("ts_acf")
+  print("The acf_ly function will be deprecated on the next release, please use ts_acf instead")
+  ts_acf(ts.obj, lag.max = lag.max, ci = ci, color = color)
+}
 
 #'  A Visualization Function of the PACF Estimation
-#' @export
+#' @export pacf_ly ts_pacf
+#' @aliases pacf_ly
 #' @param ts.obj a univariate or multivariate time series object of class "ts", "mts", "zoo" or "xts"
-#' @param lag.max maximum lag at which to calculate the acf. Default is 10*log10(N/m) where N is the number of observations and m the number of series. Will be automatically limited to one less than the number of observations in the series.
-#' @param ci the significant level of the estimation - a numeric value between 0 and 1, default is set for 0.95 
+#' @param lag.max maximum lag at which to calculate the acf. Default is 10*log10(N/m) 
+#' where N is the number of observations and m the number of series. 
+#' Will be automatically limited to one less than the number of observations in the series.
+#' @param ci the significant level of the estimation - a numeric value between 0 and 1, 
+#' default is set for 0.95 
+#' @param color The color of the plot, support both name and expression
 #' @examples
-#' pacf_ly(AirPassengers, lag.max = 60)
+#' data(USgas)
+#' 
+#' ts_pacf(USgas, lag.max = 60)
 
-
-pacf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
+ts_pacf <- function(ts.obj, lag.max = NULL, ci = 0.95, color = NULL) {
   `%>%` <- magrittr::`%>%`
   # Error handling
   if (is.null(ts.obj)) {
     stop("The time series object is NULL")
   } else if (!stats::is.ts(ts.obj) & !xts::is.xts(ts.obj) & 
              !zoo::is.zoo(ts.obj)) {
-    stop("Invalid class - Please make sure the object class is either \"ts\", \"mts\", \"xts\" or \"zoo\"")
+    stop("Invalid class - Please make sure the object class is either 'ts', 'mts', 'xts' or 'zoo'")
   }
   
   if (ci > 1 | ci < 0) {
     warning("The 'ci' value is out of bound (0-1), the default option of 0.95 will be used")
     ci <- 0.95
   }
-  
+  if(!is.null(color)){
+    if(!is.character(color)){
+      warning("The value of the 'color' parameter is not valid")
+      color = "#00526d"
+    }
+  } else{
+    color = "#00526d"
+  }
   x <- df <- obj.name <- NULL
   
   obj.name <- base::deparse(base::substitute(ts.obj))
@@ -344,8 +380,8 @@ pacf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
                                                                    dash = "dash", color = "green")) %>% 
             plotly::layout(xaxis = list(title = "Lag", 
                                         showgrid = FALSE), yaxis = list(title = "PACF", 
-                                                                        showgrid = FALSE, range = c(min(x[[1]]), 
-                                                                                                    max(x[[1]]))), annotations = list(text = c, 
+                                                                        showgrid = FALSE, range = c(base::min(x[[1]]), 
+                                                                                                    base::max(x[[1]]))), annotations = list(text = c, 
                                                                                                                                       xref = "paper", yref = "paper", yanchor = "bottom", 
                                                                                                                                       xanchor = "center", align = "center", 
                                                                                                                                       x = 0.5, y = 0.9, showarrow = FALSE))
@@ -364,8 +400,8 @@ pacf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
                                                                    dash = "dash", color = "green")) %>% 
             plotly::layout(xaxis = list(title = "Lag", 
                                         showgrid = FALSE), yaxis = list(title = "PACF", 
-                                                                        showgrid = FALSE, range = c(min(x[[1]]), 
-                                                                                                    max(x[[1]]))), annotations = list(text = paste(r, 
+                                                                        showgrid = FALSE, range = c(base::min(x[[1]]), 
+                                                                                                    base::max(x[[1]]))), annotations = list(text = paste(r, 
                                                                                                                                                    c, sep = " & "), xref = "paper", yref = "paper", 
                                                                                                                                       yanchor = "bottom", xanchor = "center", 
                                                                                                                                       align = "center", x = 0.5, y = 0.9, 
@@ -379,7 +415,10 @@ pacf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
       plotly::layout(title = "PACF Plot", margin = 0.06)
   } else if (ncol(df) == 5) {
     p <- plotly::plot_ly(data = df) %>% plotly::add_bars(x = ~lag, 
-                                                         y = ~acf, width = ~width, name = "ACF") %>% 
+                                                         y = ~acf, 
+                                                         width = ~width, 
+                                                         marker = list(color = color),
+                                                         name = "ACF") %>% 
       plotly::add_trace(x = ~lag, y = ~ci_u, type = "scatter", 
                         mode = "lines", name = "CI Upper Bound", 
                         line = list(width = 1, dash = "dash", color = "green")) %>% 
@@ -394,3 +433,9 @@ pacf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95) {
   
   return(p)
   }
+
+pacf_ly <- function(ts.obj, lag.max = NULL, ci = 0.95, color = NULL) {
+  # .Deprecated("ts_pacf")
+  print("The pacf_ly function will be deprecated on the next release, please use ts_pacf instead")
+  ts_acf(ts.obj, lag.max = lag.max, ci = ci, color = color)
+}
